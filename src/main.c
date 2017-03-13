@@ -31,7 +31,7 @@ SOFTWARE.
 
 int main(void)
 {
-    char arr[8]="roosbeh\n";
+    char arr[9]="roosbeh\r\n";
     int i=0;
 	SIM->SCGC5 |= 1UL<<10;                // Enable the clk on PORTB
 	SIM->SOPT5 &= ~0xF;                   // Ensure the source for the UART 0 tx and Rx data is UART0 pins only
