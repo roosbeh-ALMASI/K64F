@@ -31,58 +31,41 @@ SOFTWARE.
 
 int main(void)
 {
+    char arr[8]="roosbeh\n";
+    int i=0;
+	SIM->SCGC5 |= 1UL<<10;                // Enable the clk on PORTB
+	SIM->SOPT5 &= ~0xF;                   // Ensure the source for the UART 0 tx and Rx data is UART0 pins only
+    SIM->SCGC4 |= 1UL<<10;                // Enable the clk on UART0
+
+	PORTB->PCR[17] |= 1UL<<8 | 1UL<<9;    //ALT3 as UART0 Tx
+	PORTB->PCR[16] |= 1UL<<8 | 1UL<<9;    //ALT3 as UART0 Rx
 
 
-    SIM->SCGC5 |= 1UL<<10 | 1UL<<13 | 1UL;  // enable clk on port B & E & LPTMR
+	UART0->C2 = 0;                        //~(1<<2 | 1<<3);      Both tx and Rx OFF
+    UART0->BDH = 0x03;
+	UART0->BDL = 0x0D;
+                                          //Baud rate 9600
+    UART0->C4  = 0x8;                     // BRFA value 01000 for 0.25 BRFD
+    UART0->C1 = 0;                        // normal opt, no parity, (stopbit+8bit data+startbit) frame mode
 
+    UART0->PFIFO = 0x80;                  //Tx FIFO enabled,Rx FIFO disable
+    UART0->C2 = (1<<2 | 1<<3);      // Both tx and Rx ON
 
-    MCG->C2 &= ~1UL;                       // ensure! Select the slow internal 32KHz CLK to MCGIRCLK
-    MCG->C1 |= 1UL<<1;                     // ensure! Enable the MCGIRCLK
+ /*  chnage the system clk to 120MHz   */
 
-    PORTB->PCR[22] |= 1UL << 8;
-    PORTE->PCR[26] |= 1UL<<8;
-    PTB->PDDR |= 1UL<<22;
-    PTE->PDDR |= 1UL<<26;
-    PTB->PSOR |= 1UL<<22;
-    PTE->PSOR |= 1UL<<26;
+	while(1)
+	{
 
-/*
-    SysTick->CTRL &= ~(1UL);
-    SysTick->LOAD = 0xFFFFFF;
-    SysTick->VAL = 0;
-    SysTick->CTRL |=    (1UL<<2 | 1UL);
+        if(  ((UART0->S1 & 1UL<<7) != 0) &&    ((UART0->S1 & 1UL<<6) != 0)   )
+        {
+           UART0->D = arr[i];
+           i++;
+        }
+        if(i==9)
+        {
+        	i=0;
+        }
 
-*/
+	}
 
-    LPTMR0->CSR = 0;                //Disable the timer first
-    LPTMR0->CMR = 0;
-    LPTMR0->PSR = 0;
-
-    LPTMR0->CSR = (1UL | 1UL<< 2);
-
-
-
-    /* TODO - Add your application code here */
-    while (1)
-    {
-/*
-    	if((SysTick->CTRL & 1UL<<16) != 0 )
-    	  {
-    		PTB->PTOR |= 1UL<<22;
-    	  }
-*/
-
-    	LPTMR0->CNR = 1;
-    	if(LPTMR0->CNR  == 65535)
-    	  {
-
-    		PTE->PTOR |=1UL<<26;
-
-
-    	  }
-
-
-    }
-
-    return 0;
 }
