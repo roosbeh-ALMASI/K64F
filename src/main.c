@@ -24,48 +24,226 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
+Developer : Roosbeh Almasi
+
 ******************************************************************************
 */
 
 #include "mcu.h"
 
+#define _PIT_90_    0x55D4A80
+#define _PIT_60_    0x3938700
+#define _PIT_30_    0x1C9C380
+
+char LEDstatus[10][50] = {
+"Green LED is ON",
+"Red LED is ON",
+"Blue LED is on",
+"ALL LEDs are ON",
+"ALL LEDs are OFF",
+"LEDs are flashing"
+};
+
+
+
+char london[8] = "London\r\n";
+
+void CLK_init(void);
+void LEDs_init(void);
+void PIT_init(void);
+void UART_init(void);
+void redLED_ON(void);
+void greenLED_ON(void);
+void blueLED_ON(void);
+void LEDs_OFF(void);
+void LEDs_ON(void);
+void CMD_Action(uint8_t *cmd);
+void LEDs_Flashing(void);
+void UART_Tx_Dis(void);
+void UART_Tx_Ena(void);
+void UART_Rx_Dis(void);
+void UART_Rx_Ena(void);
+void UART_TxRx_Dis(void);
+
+
 int main(void)
 {
-    char arr[9]="roosbeh\r\n";
-    int i=0;
-	SIM->SCGC5 |= 1UL<<10;                // Enable the clk on PORTB
-	SIM->SOPT5 &= ~0xF;                   // Ensure the source for the UART 0 tx and Rx data is UART0 pins only
-    SIM->SCGC4 |= 1UL<<10;                // Enable the clk on UART0
 
-	PORTB->PCR[17] |= 1UL<<8 | 1UL<<9;    //ALT3 as UART0 Tx
-	PORTB->PCR[16] |= 1UL<<8 | 1UL<<9;    //ALT3 as UART0 Rx
+	CLK_init();
+	LEDs_init();
+	PIT_init();
+	UART_init();
+	LEDs_OFF();
+ 	UART_Tx_Ena();
 
-
-	UART0->C2 = 0;                        //~(1<<2 | 1<<3);      Both tx and Rx OFF
-    UART0->BDH = 0x03;
-	UART0->BDL = 0x0D;
-                                          //Baud rate 9600
-    UART0->C4  = 0x8;                     // BRFA value 01000 for 0.25 BRFD
-    UART0->C1 = 0;                        // normal opt, no parity, (stopbit+8bit data+startbit) frame mode
-
-    UART0->PFIFO = 0x80;                  //Tx FIFO enabled,Rx FIFO disable
-    UART0->C2 = (1<<2 | 1<<3);      // Both tx and Rx ON
-
- /*  chnage the system clk to 120MHz   */
-
+int i=0;
 	while(1)
 	{
 
         if(  ((UART0->S1 & 1UL<<7) != 0) &&    ((UART0->S1 & 1UL<<6) != 0)   )
         {
-           UART0->D = arr[i];
-           i++;
+
+        	UART0->D = london[i];
+        	i++;
         }
-        if(i==9)
+
+        if(i == 8)
         {
-        	i=0;
+          i=0;
         }
+        /*
+
+        if(i==10   && ((UART0->S1 & 1UL<<7) != 0) &&    ((UART0->S1 & 1UL<<6) != 0))
+        {
+
+        	UART0->D = '\n';
+
+        }
+        */
 
 	}
 
 }
+
+//-----------------------------------------------------------------------------------
+
+void CLK_init(void)
+{
+ /* System Core CLK is 120MHz  */
+
+	SIM->SCGC4 |= 1UL<<10;                   //Enable the clk on UART0
+	SIM->SCGC6 |= 1UL<<23;                   //Enable the clk on PIT timer
+	SIM->SCGC5 |= (1UL<<10 | 1UL<<13);       //Enable the clk on PORT B and E
+	SIM->SOPT5 &= ~(0xF);                    //Ensures the UART0 pins are the data source
+
+}
+void LEDs_init(void)
+{
+	PORTB->PCR[22] |= 1UL<<8;                //Select Pins as General Purpose IO
+	PORTB->PCR[21] |= 1UL<<8;
+	PORTE->PCR[26] |= 1UL<<8;
+
+	PTB->PDDR |= (1UL<<21 | 1UL<<22);                    //Select pins as outputs
+	PTE->PDDR |= 1UL<<26;
+
+    PTB->PSOR |= (1UL<<21 | 1UL<<22);                    //Set the pin outpputs to 1, turn the LEDs OFF
+    PTE->PSOR |= 1UL<<26;
+
+}
+void PIT_init(void)
+{
+	/* PIT is DownCounter */
+	PIT->MCR &= ~(1UL<<1 | 1UL);                        //Enables the clk to PIT and PIT runs in debug mode
+	PIT->CHANNEL[0].TCTRL &= ~(1UL | 1UL<<1 | 1UL<<2);  //Disable PIT, IRQ and not chain
+	PIT->CHANNEL[0].LDVAL =0x55D4A80 ;                  //PIT value, 1.5s and resets
+    PIT->CHANNEL[0].TCTRL |= 1UL;                       //PIT Enabled
+  //PIT->CHANNEL[0].CVAL = PIT CurrentValue             //Could read the current value
+
+}
+/***************************************************************************************/
+void UART_Tx_Dis(void)
+{
+    UART0->C2 &= ~(1UL<<3);
+}
+void UART_Tx_Ena(void)
+{
+	UART0->C2 |= 1UL<<3;
+}
+void UART_Rx_Dis(void)
+{
+	UART0->C2 &= ~1UL<<2;
+}
+void UART_Rx_Ena(void)
+{
+	UART0->C2 |= 1UL<<2;
+}
+void UART_TxRx_Dis(void)
+{
+	UART0->C2 &= ~(1<<3 | 1<<2);
+}
+
+void UART_init(void)
+{
+	PORTB->PCR[16] |= (1UL<<8 | 1UL<<9);       //Select pin for UART0 Rx
+	PORTB->PCR[17] |= (1UL<<8 | 1UL<<9);       //Select pin for UART0 Tx
+
+	UART_TxRx_Dis();
+	UART0->BDH = 0x03;
+	UART0->BDL = 0x0D;                  // Baud rate = 9600 b/s
+	UART0->C4  = 0x8;                   // BRFA value 01000 for 0.25 BRFD
+	UART0->C1 = 0;                      //Normal operation, No parity, (stopbit+8bit data+startbit), LSB first
+	UART0->PFIFO = (1UL<<3 | 1UL<<7) ;        //Tx and Rx FIFO enabled with depth 1 dataword
+}
+
+
+void redLED_ON(void)
+{
+   PTB->PSOR |= 1UL<<21;
+   PTE->PSOR |= 1UL<<26;
+   PTB->PCOR |= 1UL<<22;
+}
+void greenLED_ON(void)
+{
+   PTB->PSOR |= (1UL<<22 | 1UL<<21);
+   PTE->PCOR |= 1UL<<26;
+}
+void blueLED_ON(void)
+{
+   PTB->PSOR |= 1UL<<22;
+   PTE->PSOR |= 1UL<<26;
+   PTB->PCOR |= 1UL<<21;
+}
+void LEDs_OFF(void)
+{
+   PTE->PSOR |= 1UL<<26;
+   PTB->PSOR |= (1UL<<22 | 1UL<<21);
+}
+void LEDs_ON(void)
+{
+   PTE->PCOR |= 1UL<<26;
+   PTB->PCOR |= (1UL<<22 | 1UL<<21);
+}
+void LEDs_Flashing(void)
+{
+  uint32_t val = PIT->CHANNEL[0].CVAL;
+
+  if((val < _PIT_90_) && (val>= _PIT_60_)  )
+  {
+     redLED_ON();
+  }
+  else if((val < _PIT_60_) && (val >= _PIT_30_))
+  {
+    greenLED_ON();
+  }
+  else if((val < _PIT_30_) || (val == _PIT_90_))
+  {
+    blueLED_ON();
+  }
+
+}
+
+void CMD_Action(uint8_t *cmd)
+{
+	switch(*cmd)
+	{
+	  case 'R':
+		  redLED_ON();
+		  break;
+	  case 'G':
+		  greenLED_ON();
+		  break;
+	  case 'B':
+		  blueLED_ON();
+		  break;
+	  case 'N':
+		  LEDs_OFF();
+		  break;
+	  case 'A':
+		  LEDs_ON();
+		  break;
+	  default:
+		  LEDs_Flashing();
+	}
+}
+
+
