@@ -35,18 +35,7 @@ Developer : Roosbeh Almasi
 #define _PIT_60_    0x3938700
 #define _PIT_30_    0x1C9C380
 
-char LEDstatus[10][50] = {
-"Green LED is ON",
-"Red LED is ON",
-"Blue LED is on",
-"ALL LEDs are ON",
-"ALL LEDs are OFF",
-"LEDs are flashing"
-};
 
-
-
-char london[8] = "London\r\n";
 
 void CLK_init(void);
 void LEDs_init(void);
@@ -68,40 +57,34 @@ void UART_TxRx_Dis(void);
 
 int main(void)
 {
-
 	CLK_init();
 	LEDs_init();
 	PIT_init();
 	UART_init();
 	LEDs_OFF();
- 	UART_Tx_Ena();
+    UART_Tx_Ena();
+    UART_Rx_Ena();
 
-int i=0;
-	while(1)
-	{
+
+char arr[]="Here is London Baker Street\r\n";
+void *ptr;
+ptr = (void *)arr;
+
+
+
+    while(*((char *)ptr) !='\0')
+    {
 
         if(  ((UART0->S1 & 1UL<<7) != 0) &&    ((UART0->S1 & 1UL<<6) != 0)   )
-        {
+            {
 
-        	UART0->D = london[i];
-        	i++;
-        }
+            	UART0->D = *((char *)ptr);
+            //	*ptr++;
+               ptr = (void *)((char *)ptr+1);   // increment the pointer
+            }
+    }
 
-        if(i == 8)
-        {
-          i=0;
-        }
-        /*
 
-        if(i==10   && ((UART0->S1 & 1UL<<7) != 0) &&    ((UART0->S1 & 1UL<<6) != 0))
-        {
-
-        	UART0->D = '\n';
-
-        }
-        */
-
-	}
 
 }
 
@@ -151,7 +134,7 @@ void UART_Tx_Ena(void)
 }
 void UART_Rx_Dis(void)
 {
-	UART0->C2 &= ~1UL<<2;
+	UART0->C2 &= ~(1UL<<2);
 }
 void UART_Rx_Ena(void)
 {
@@ -171,8 +154,9 @@ void UART_init(void)
 	UART0->BDH = 0x03;
 	UART0->BDL = 0x0D;                  // Baud rate = 9600 b/s
 	UART0->C4  = 0x8;                   // BRFA value 01000 for 0.25 BRFD
-	UART0->C1 = 0;                      //Normal operation, No parity, (stopbit+8bit data+startbit), LSB first
-	UART0->PFIFO = (1UL<<3 | 1UL<<7) ;        //Tx and Rx FIFO enabled with depth 1 dataword
+	UART0->C1 = 0;                      //Normal operation, No parity, (stopbit+8bit data+startbit)
+	UART0->S2 &= ~1UL<<5;                // LSB first
+	UART0->PFIFO = (1UL<<3 | 1UL<<7) ;   //Tx and Rx FIFO enabled with depth 1 dataword
 }
 
 
