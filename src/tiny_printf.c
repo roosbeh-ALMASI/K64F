@@ -35,6 +35,7 @@ Copyright (c) 2009-2017 Atollic AB
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
+#include "tiny_printf.h"
 
 /* Create aliases for *printf to integer variants *iprintf */
 __attribute__ ((alias("iprintf"))) int printf(const char *fmt, ...);

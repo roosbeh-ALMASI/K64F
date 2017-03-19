@@ -7,13 +7,15 @@ Developer : Roosbeh Almasi
 
 #include "mcu.h"
 #include "func.h"
+//#include "tiny_printf.h"
 
 int main(void)
 {
-   // uint32_t i = 0;
-	CLK_init();
-	LEDs_init();
 
+	CLK_init();
+	UART_init();
+	UART_Tx_Ena();
+/*
 
     SIM->SCGC6 |= SIM_SCGC6_FTM0_MASK;
     SIM->SCGC5 |= SIM_SCGC5_PORTD_MASK;
@@ -25,20 +27,13 @@ int main(void)
     FTM0->MOD = 60000;
     FTM0_C5SC |= 0x0028;
     FTM0_C5V = 500;
-
+*/
 
     while (1)
     {
-         if(FTM0->CNT < 30000)
-         {
 
-             redLED_ON();
-         }
-         else if(FTM0->CNT > 30000)
-         {
+    	printf("roosbehAlmasi = %d \r\n", 1982);
 
-        	 greenLED_ON();
-         }
     }
 
     return 0;

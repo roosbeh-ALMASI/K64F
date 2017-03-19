@@ -17,6 +17,7 @@ Copyright (c) 2009-2017 Atollic AB
 #include <time.h>
 #include <sys/time.h>
 #include <sys/times.h>
+#include "func.h"
 
 
 /* Variables */
@@ -52,6 +53,17 @@ void _exit (int32_t status)
 int _write(int32_t file, uint8_t *ptr, int32_t len)
 {
   /* Implement your write code here, this is used by puts and printf for example */
+
+
+	//------------------------------ Roosbeh Code ------------------------------------
+
+	  int i = 0;
+	 for(i=0; i<len; i++)
+	     {
+	        UART_putchar(*ptr++);
+	     }
+	//---------------------------------------------------------------------------------
+
   return len;
 }
 

@@ -10,6 +10,7 @@
 
 
 #include <stdlib.h>
+#include "tiny_printf.h"
 
 
 #define _PIT_90_    0x55D4A80
